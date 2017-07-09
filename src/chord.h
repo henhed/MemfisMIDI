@@ -22,5 +22,7 @@ typedef struct _MMChord MMChord;
 
 MMChord *mm_chord_new (const char *);
 void mm_chord_free (MMChord *);
+const char *mm_chord_get_name (const MMChord *);
+int mm_chord_get_notes (const MMChord *, int *);
 
 #endif /* ! MM_CHORD_H */

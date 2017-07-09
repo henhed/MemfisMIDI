@@ -16,7 +16,6 @@
    along with MemfisMIDI.  If not, see <http://www.gnu.org/licenses/>. */
 
 #include <stdlib.h>
-#include <malloc.h>
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
@@ -38,6 +37,7 @@ struct _MMChord
 {
   char *name;
   int root;
+  int octave;
   int quality;
   int notes[12];
 };
@@ -71,6 +71,7 @@ mm_chord_new (const char *name)
       return NULL;
     }
 
+  chord->octave = 4;
   suffix = endptr;
   set_quality (chord, suffix, &endptr);
   suffix = endptr;
@@ -98,6 +99,50 @@ mm_chord_free (MMChord *chord)
         free (chord->name);
       free (chord);
     }
+}
+
+const char *
+mm_chord_get_name (const MMChord *chord)
+{
+  if (chord == NULL)
+    return NULL;
+  return chord->name;
+}
+
+static int
+cmp_int (const void *a, const void *b)
+{
+  int ia = *(int *) a;
+  int ib = *(int *) b;
+  return (ia > ib) - (ia < ib);
+}
+
+int
+mm_chord_get_notes (const MMChord *chord, int *notes)
+{
+  int root, nnotes = 0;
+
+  if (chord == NULL || notes == NULL)
+    return nnotes;
+
+  root = 12 + (12 * chord->octave) + chord->root;
+
+  for (int i = 0; i < 12; ++i)
+    {
+      int offset = chord->notes[i];
+
+      if (offset == 0)
+        continue;
+      else if (offset > 0)
+        offset -= 1;
+
+      notes[nnotes++] = root + i + (offset * 12);
+    }
+
+  if (nnotes > 1)
+    qsort (notes, nnotes, sizeof (int), cmp_int);
+
+  return nnotes;
 }
 
 static int
