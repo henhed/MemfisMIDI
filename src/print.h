@@ -15,21 +15,22 @@
    You should have received a copy of the GNU General Public License
    along with MemfisMIDI.  If not, see <http://www.gnu.org/licenses/>. */
 
-#ifndef MM_PLAYER_H
-#define MM_PLAYER_H 1
+#ifndef MM_PRINT_H
+#define MM_PRINT_H 1
 
-#include <stdbool.h>
+#include <stdio.h>
 
-#include <portmidi.h>
+#define MMCB(string) \
+  "\e[1;34m" string "\e[0m"
+#define MMCG(string) \
+  "\e[1;32m" string "\e[0m"
+#define MMCR(string) \
+  "\e[0;31m" string "\e[0m"
+#define MMCY(string) \
+  "\e[0;33m" string "\e[0m"
 
-#include "chord.h"
+#define MMERR(format, ...)                                    \
+  fprintf (stderr, MMCR ("ERROR") " in %s(%d): " format "\n", \
+           __FILE__, __LINE__, ##__VA_ARGS__)
 
-typedef struct _MMPlayer MMPlayer;
-
-MMPlayer *mm_player_new (PmDeviceID);
-void mm_player_free (MMPlayer *);
-bool mm_player_send (MMPlayer *, int, int, int);
-void mm_player_play (MMPlayer *, const MMChord *);
-bool mm_player_killall (MMPlayer *);
-
-#endif /* ! MM_PLAYER_H */
+#endif /* ! MM_PRINT_H */

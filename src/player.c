@@ -1,28 +1,43 @@
 #include <stdlib.h>
 #include <assert.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "player.h"
-
-#define C_BLUE "\e[1;34m"
-#define C_GREEN "\e[1;32m"
-#define C_RED "\e[0;31m"
-#define C_YELLOW "\e[0;33m"
-#define C_RESET "\e[0m"
+#include "print.h"
 
 struct _MMPlayer
 {
+  PortMidiStream *stream;
   int notes[12];
   int nnotes;
 };
 
 MMPlayer *
-mm_player_new ()
+mm_player_new (PmDeviceID device)
 {
-  MMPlayer *player = calloc (1, sizeof (MMPlayer));
+  MMPlayer *player = NULL;
+  PortMidiStream *stream = NULL;
+  PmError err;
+
+  err = Pm_OpenOutput (&stream,
+                       device,
+                       NULL, /* void *outputDriverInfo */
+                       1,    /* int32_t bufferSize */
+                       NULL, /* PmTimeProcPtr time_proc */
+                       NULL, /* void *time_info */
+                       0);   /* int32_t latency */
+  if (err < pmNoError || stream == NULL)
+    {
+      MMERR ("MIDI Device " MMCY ("%d") " could not be opened: " MMCY ("%s"),
+             device, Pm_GetErrorText (err));
+      return NULL;
+    }
+
+  player = calloc (1, sizeof (MMPlayer));
   assert (player != NULL);
+  player->stream = stream;
+
   return player;
 }
 
@@ -30,22 +45,31 @@ void
 mm_player_free (MMPlayer *player)
 {
   if (player != NULL)
-    free (player);
+    {
+      Pm_Close (player->stream);
+      free (player);
+    }
 }
 
-void
+bool
 mm_player_send (MMPlayer *player, int status, int data1, int data2)
 {
-  if (player == NULL)
-    return;
+  PmError err;
+  int message;
 
-  fprintf (stderr,
-           C_RED
-           __FILE__
-           ": `mm_player_send' (%X, %X, %X) not implemented"
-           C_RESET
-           "\n",
-           status, data1, data2);
+  if (player == NULL)
+    return false;
+
+  message = Pm_Message (status, data1, data2);
+  err = Pm_WriteShort (player->stream, 0, message);
+  if (err < pmNoError)
+    {
+      MMERR ("Message " MMCY ("0x%X") " returned " MMCY ("%s"),
+             message, Pm_GetErrorText (err));
+      return false;
+    }
+
+  return true;
 }
 
 void
@@ -59,7 +83,7 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
 
   nnotes = mm_chord_get_notes (chord, notes);
 
-  printf ("PLAYING: " C_BLUE "%s" C_RESET "\n    OFF:",
+  printf ("PLAYING: " MMCB ("%s") "\n    OFF:",
           mm_chord_get_name (chord));
 
   for (int o = 0; o < player->nnotes; ++o)
@@ -75,7 +99,7 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
         }
       if (release)
         {
-          printf (" " C_YELLOW "%d" C_RESET, player->notes[o]);
+          printf (" " MMCY ("%d"), player->notes[o]);
           mm_player_send (player, 0x80, player->notes[o], 0x40);
         }
     }
@@ -95,7 +119,7 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
         }
       if (press)
         {
-          printf (" " C_GREEN "%d" C_RESET, notes[n]);
+          printf (" " MMCG ("%d"), notes[n]);
           mm_player_send (player, 0x90, notes[n], 0x7F);
         }
     }
@@ -106,8 +130,8 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
   player->nnotes = nnotes;
 }
 
-void
+bool
 mm_player_killall (MMPlayer *player)
 {
-  mm_player_send (player, 0xB0, 0x7B, 0x00);
+  return mm_player_send (player, 0xB0, 0x7B, 0x00);
 }
