@@ -133,5 +133,9 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
 bool
 mm_player_killall (MMPlayer *player)
 {
+  if (player == NULL)
+    return false;
+  player->nnotes = 0;
+  memset (player->notes, 0, sizeof (int) * 12);
   return mm_player_send (player, 0xB0, 0x7B, 0x00);
 }
