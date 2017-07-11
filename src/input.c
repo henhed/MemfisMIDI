@@ -17,12 +17,16 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <signal.h>
 #include <unistd.h>
 
 #include <fcntl.h>
 #include <linux/joystick.h>
 
 #include "input.h"
+
+static bool mm_quit = false;
+static void mm_sa_handler (int);
 
 struct _MMInput
 {
@@ -33,8 +37,18 @@ MMInput *
 mm_input_new ()
 {
   MMInput *input = calloc (1, sizeof (MMInput));
+  struct sigaction sa;
+
   assert (input != NULL);
   input->fd = -1;
+
+  sigaction (SIGINT, NULL, &sa);
+  if (sa.sa_handler != mm_sa_handler)
+    {
+      sa.sa_handler = mm_sa_handler;
+      sigaction (SIGINT, &sa, NULL);
+    }
+
   return input;
 }
 
@@ -80,6 +94,12 @@ mm_input_read (const MMInput *input)
 {
   struct js_event e;
 
+  if (mm_quit == true)
+    {
+      mm_quit = false;
+      return MM_INPUT_QUIT;
+    }
+
   if (input == NULL || input->fd < 0)
     return -1;
 
@@ -92,4 +112,11 @@ mm_input_read (const MMInput *input)
     }
 
   return -1;
+}
+
+static void
+mm_sa_handler (int sig)
+{
+  (void) sig;
+  mm_quit = true;
 }
