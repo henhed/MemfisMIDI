@@ -29,7 +29,7 @@ enum
   MM_INPUT_PREV_CHORD = 4,
   MM_INPUT_NEXT_CHORD = 6,
   MM_INPUT_KILL_ALL = 2,
-  MM_INPUT_QUIT = 0xD1E
+  MM_INPUT_QUIT = 9
 };
 
 MMInput *mm_input_new ();
