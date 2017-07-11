@@ -117,6 +117,6 @@ mm_input_read (const MMInput *input)
 static void
 mm_sa_handler (int sig)
 {
-  (void) sig;
+  signal (sig, mm_sa_handler);
   mm_quit = true;
 }
