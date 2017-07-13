@@ -18,12 +18,18 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <signal.h>
+#include <string.h>
+#include <inttypes.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include <fcntl.h>
 #include <linux/joystick.h>
 
 #include "input.h"
+#include "print.h"
+
+#define MAP_LENGTH (KEY_MAX - BTN_MISC + 1)
 
 static bool mm_quit = false;
 static void mm_sa_handler (int);
@@ -31,6 +37,8 @@ static void mm_sa_handler (int);
 struct _MMInput
 {
   int fd;
+  uint8_t nbuttons;
+  uint16_t map[MAP_LENGTH];
 };
 
 MMInput *
@@ -76,6 +84,12 @@ mm_input_connect (MMInput *input, const char *pathname)
 
   fcntl (input->fd, F_SETFL, O_NONBLOCK);
 
+  if (ioctl (input->fd, JSIOCGBUTTONS, &input->nbuttons) < 0)
+    MMERR ("Could not get button count: ERRNO " MMCY ("%d"), errno);
+
+  if (ioctl (input->fd, JSIOCGBTNMAP, input->map) < 0)
+    MMERR ("Could not get button map: ERRNO " MMCY ("%d"), errno);
+
   return true;
 }
 
@@ -86,6 +100,8 @@ mm_input_disconnect (MMInput *input)
     {
       close (input->fd);
       input->fd = -1;
+      input->nbuttons = 0;
+      memset (input->map, 0, sizeof (uint16_t) * MAP_LENGTH);
     }
 }
 
@@ -97,7 +113,7 @@ mm_input_read (const MMInput *input)
   if (mm_quit == true)
     {
       mm_quit = false;
-      return MM_INPUT_QUIT;
+      return MM_BTN_SELECT;
     }
 
   if (input == NULL || input->fd < 0)
@@ -107,8 +123,12 @@ mm_input_read (const MMInput *input)
     {
       if (e.type & JS_EVENT_INIT)
         continue;
-      if ((e.type & JS_EVENT_BUTTON) && e.value == 1)
-        return (int) e.number;
+      if ((e.type & JS_EVENT_BUTTON)
+          && e.value == 1
+          && e.number < input->nbuttons)
+        {
+          return (int) input->map[e.number];
+        }
     }
 
   return -1;

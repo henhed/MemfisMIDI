@@ -69,17 +69,17 @@ mm_app_tick (MMApp *app, MMProgram *program)
     {
       switch (event)
         {
-        case MM_INPUT_QUIT:
+        case MM_BTN_SELECT:
           app->quit = true;
           /* break intentionally omitted.  */
-        case MM_INPUT_KILL_ALL:
+        case MM_BTN_TL:
           mm_player_killall (app->player);
           break;
-        case MM_INPUT_NEXT_CHORD:
+        case MM_BTN_TR:
           mm_player_play (app->player, mm_sequence_next (seq));
           break;
         default:
-          MMERR ("Unhandled input event " MMCY ("%d"), event);
+          MMERR ("Unhandled input event " MMCY ("%s"), mm_btn_name (event));
           break;
         }
     }
