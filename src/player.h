@@ -28,7 +28,7 @@ typedef struct _MMPlayer MMPlayer;
 
 MMPlayer *mm_player_new (PmDeviceID);
 void mm_player_free (MMPlayer *);
-bool mm_player_send (MMPlayer *, int, int, int);
+bool mm_player_send (MMPlayer *, int, int, int, int);
 void mm_player_play (MMPlayer *, const MMChord *);
 bool mm_player_killall (MMPlayer *);
 
