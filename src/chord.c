@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include <stdbool.h>
 #include <ctype.h>
 
 #include "chord.h"
@@ -40,6 +39,7 @@ struct _MMChord
   int octave;
   int quality;
   int notes[12];
+  bool lift;
 };
 
 static int dom_scale[7] = {0, 2, 4, 5, 7, 9, 10};
@@ -71,7 +71,9 @@ mm_chord_new (const char *name)
       return NULL;
     }
 
-  chord->octave = 4;
+  chord->octave = 5;
+  chord->lift = false;
+
   suffix = endptr;
   set_quality (chord, suffix, &endptr);
   suffix = endptr;
@@ -125,7 +127,7 @@ mm_chord_get_notes (const MMChord *chord, int *notes)
   if (chord == NULL || notes == NULL)
     return nnotes;
 
-  root = 12 + (12 * chord->octave) + chord->root;
+  root = (12 * chord->octave) + chord->root;
 
   for (int i = 0; i < 12; ++i)
     {
@@ -143,6 +145,48 @@ mm_chord_get_notes (const MMChord *chord, int *notes)
     qsort (notes, nnotes, sizeof (int), cmp_int);
 
   return nnotes;
+}
+
+bool
+mm_chord_get_lift (const MMChord *chord)
+{
+  return (chord != NULL && chord->lift == true) ? true : false;
+}
+
+void
+mm_chord_set_lift (MMChord *chord, bool lift)
+{
+  if (chord != NULL)
+    chord->lift = lift;
+}
+
+void
+mm_chord_shift_octave (MMChord *chord, int octave)
+{
+  if (chord == NULL)
+    return;
+
+  chord->octave += octave;
+  if (chord->octave < 0)
+    chord->octave = 0;
+  else if (chord->octave > 10)
+    chord->octave = 10;
+}
+
+void
+mm_chord_shift_note_octave (MMChord *chord, int note, int octave)
+{
+  if (chord == NULL || note < 0 || note > 11 || octave == 0
+      || chord->notes[note] == 0)
+    return;
+
+  if (chord->notes[note] > 0)
+    chord->notes[note] -= 1;
+
+  chord->notes[note] += octave;
+
+  if (chord->notes[note] >= 0)
+    chord->notes[note] += 1;
 }
 
 static int

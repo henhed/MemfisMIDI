@@ -31,6 +31,10 @@ struct _MMPlayer
   int nnotes;
 };
 
+static void send_notes_on (MMPlayer *, int *, int);
+static void send_notes_off (MMPlayer *, int *, int);
+static int array_diff_int (int *, int, int *, int, int *);
+
 static int
 mm_player_time_proc (void *time_info)
 {
@@ -105,50 +109,32 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
   if (player == NULL || chord == NULL)
     return;
 
+  printf ("PLAYING: " MMCB ("%s") "\n", mm_chord_get_name (chord));
+
   nnotes = mm_chord_get_notes (chord, notes);
 
-  printf ("PLAYING: " MMCB ("%s") "\n    OFF:",
-          mm_chord_get_name (chord));
-
-  for (int o = 0; o < player->nnotes; ++o)
+  if (mm_chord_get_lift (chord))
     {
-      bool release = true;
-      for (int n = 0; n < nnotes; ++n)
-        {
-          if (notes[n] == player->notes[o])
-            {
-              release = false;
-              break;
-            }
-        }
-      if (release)
-        {
-          printf (" " MMCY ("%d"), player->notes[o]);
-          mm_player_send (player, 0x80, player->notes[o], 0x40, 0);
-        }
+      send_notes_off (player, player->notes, player->nnotes);
+      send_notes_on (player, notes, nnotes);
+    }
+  else
+    {
+      int diff[12];
+      int ndiff;
+
+      ndiff = array_diff_int (player->notes, player->nnotes,
+                              notes, nnotes,
+                              diff);
+      send_notes_off (player, diff, ndiff);
+
+      ndiff = array_diff_int (notes, nnotes,
+                              player->notes, player->nnotes,
+                              diff);
+      send_notes_on (player, diff, ndiff);
     }
 
-  printf ("\n     ON:");
-
-  for (int n = 0; n < nnotes; ++n)
-    {
-      bool press = true;
-      for (int o = 0; o < player->nnotes; ++o)
-        {
-          if (player->notes[o] == notes[n])
-            {
-              press = false;
-              break;
-            }
-        }
-      if (press)
-        {
-          printf (" " MMCG ("%d"), notes[n]);
-          mm_player_send (player, 0x90, notes[n], 0x7F, 0);
-        }
-    }
-
-  printf ("\n--------\n");
+  printf ("--------\n");
 
   memcpy (player->notes, notes, sizeof (int) * nnotes);
   player->nnotes = nnotes;
@@ -163,4 +149,49 @@ mm_player_killall (MMPlayer *player)
   player->nnotes = 0;
   memset (player->notes, 0, sizeof (int) * 12);
   return mm_player_send (player, 0xB0, 0x7B, 0x00, 0);
+}
+
+static void
+send_notes_on (MMPlayer *player, int *notes, int nnotes)
+{
+  printf ("     ON:");
+  for (int i = 0; i < nnotes; ++i)
+    {
+      mm_player_send (player, 0x90, notes[i], 0x7F, 0);
+      printf (" " MMCG ("%d"), notes[i]);
+    }
+  printf ("\n");
+}
+
+static void
+send_notes_off (MMPlayer *player, int *notes, int nnotes)
+{
+  printf ("    OFF:");
+  for (int i = 0; i < nnotes; ++i)
+    {
+      mm_player_send (player, 0x80, notes[i], 0x40, 0);
+      printf (" " MMCY ("%d"), notes[i]);
+    }
+  printf ("\n");
+}
+
+static int
+array_diff_int (int *a, int alen, int *b, int blen, int *diff)
+{
+  int dlen = 0;
+  for (int ai = 0; ai < alen; ++ai)
+    {
+      bool missing = true;
+      for (int bi = 0; bi < blen; ++bi)
+        {
+          if (b[bi] == a[ai])
+            {
+              missing = false;
+              break;
+            }
+        }
+      if (missing)
+        diff[dlen++] = a[ai];
+    }
+  return dlen;
 }
