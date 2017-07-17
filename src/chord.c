@@ -63,7 +63,7 @@ mm_chord_new (const char *name)
   assert (name != NULL);
   chord = calloc (1, sizeof (MMChord));
   assert (chord != NULL);
-  chord->name = strndup (name, 16);
+  chord->name = strndup (name, 32);
   assert (chord->name != NULL);
 
   chord->root = parse_root (chord->name, &endptr);
@@ -442,10 +442,8 @@ add_alteration (MMChord *chord, const char *alt, char **endptr)
 
   d = *c - '0';
   ++c;
-  if (d == 1)
+  if (d == 1 && (*c == '1' || *c == '3'))
     {
-      if (*c != '1' && *c != '3')
-        return;
       d = 10 + (*c - '0');
       ++c;
     }
