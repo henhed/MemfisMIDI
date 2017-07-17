@@ -31,5 +31,6 @@ void mm_player_free (MMPlayer *);
 bool mm_player_send (MMPlayer *, int, int, int, int);
 void mm_player_play (MMPlayer *, const MMChord *);
 bool mm_player_killall (MMPlayer *);
+void mm_player_set_bpm (MMPlayer *, double);
 
 #endif /* ! MM_PLAYER_H */

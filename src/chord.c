@@ -40,6 +40,8 @@ struct _MMChord
   int quality;
   int notes[12];
   bool lift;
+  double delay;
+  double broken;
 };
 
 static int dom_scale[7] = {0, 2, 4, 5, 7, 9, 10};
@@ -73,6 +75,8 @@ mm_chord_new (const char *name)
 
   chord->octave = 5;
   chord->lift = false;
+  chord->delay = 0.;
+  chord->broken = 0.;
 
   suffix = endptr;
   set_quality (chord, suffix, &endptr);
@@ -187,6 +191,32 @@ mm_chord_shift_note_octave (MMChord *chord, int note, int octave)
 
   if (chord->notes[note] >= 0)
     chord->notes[note] += 1;
+}
+
+double
+mm_chord_get_delay (const MMChord *chord)
+{
+  return (chord != NULL) ? chord->delay : 0.;
+}
+
+void
+mm_chord_set_delay (MMChord *chord, double delay)
+{
+  if (chord != NULL && delay >= 0.)
+    chord->delay = delay;
+}
+
+double
+mm_chord_get_broken (const MMChord *chord)
+{
+  return (chord != NULL) ? chord->broken : 0.;
+}
+
+void
+mm_chord_set_broken (MMChord *chord, double broken)
+{
+  if (chord != NULL)
+    chord->broken = broken;
 }
 
 static int

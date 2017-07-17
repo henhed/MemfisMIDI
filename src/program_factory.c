@@ -29,6 +29,7 @@ static void load_chords (MMSequence *, yaml_document_t *, yaml_node_t *);
 static void load_chord_properties (MMChord *, yaml_document_t *, yaml_node_t *);
 static bool node_to_string (yaml_node_t *, const char **);
 static bool node_to_int (yaml_node_t *, int *);
+static bool node_to_float (yaml_node_t *, double *);
 static bool node_to_bool (yaml_node_t *, bool *);
 static yaml_node_t *get_node_by_key (yaml_document_t *, yaml_node_t *,
                                      const char *);
@@ -166,6 +167,8 @@ load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
 {
   bool lift;
   int octave;
+  double delay;
+  double broken;
   yaml_node_t *voice;
 
   if (node_to_bool (get_node_by_key (doc, node, "lift"), &lift) && lift == true)
@@ -173,6 +176,12 @@ load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
 
   if (node_to_int (get_node_by_key (doc, node, "octave"), &octave))
     mm_chord_shift_octave (chord, octave);
+
+  if (node_to_float (get_node_by_key (doc, node, "delay"), &delay))
+    mm_chord_set_delay (chord, delay);
+
+  if (node_to_float (get_node_by_key (doc, node, "break"), &broken))
+    mm_chord_set_broken (chord, broken);
 
   voice = get_node_by_key (doc, node, "voice");
   if (voice != NULL && voice->type == YAML_MAPPING_NODE)
@@ -245,6 +254,29 @@ node_to_int (yaml_node_t *node, int *value)
   else
     {
       MMERR ("Invalid integer expression " MMCY ("%s"), strval);
+      return false;
+    }
+}
+
+static bool
+node_to_float (yaml_node_t *node, double *value)
+{
+  double floatval;
+  char *endptr;
+  const char *strval = NULL;
+
+  if (!node_to_string (node, &strval))
+    return false;
+
+  floatval = strtod (strval, &endptr);
+  if (*endptr == '\0')
+    {
+      *value = floatval;
+      return true;
+    }
+  else
+    {
+      MMERR ("Invalid float expression " MMCY ("%s"), strval);
       return false;
     }
 }

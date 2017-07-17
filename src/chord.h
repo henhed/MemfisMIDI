@@ -30,5 +30,9 @@ bool mm_chord_get_lift (const MMChord *);
 void mm_chord_set_lift (MMChord *, bool);
 void mm_chord_shift_octave (MMChord *, int);
 void mm_chord_shift_note_octave (MMChord *, int, int);
+double mm_chord_get_delay (const MMChord *);
+void mm_chord_set_delay (MMChord *, double);
+double mm_chord_get_broken (const MMChord *);
+void mm_chord_set_broken (MMChord *, double);
 
 #endif /* ! MM_CHORD_H */

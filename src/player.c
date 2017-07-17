@@ -29,9 +29,10 @@ struct _MMPlayer
   MMTimer *timer;
   int notes[12];
   int nnotes;
+  double bpm;
 };
 
-static void send_notes_on (MMPlayer *, int *, int);
+static void send_notes_on (MMPlayer *, int *, int, double, double);
 static void send_notes_off (MMPlayer *, int *, int);
 static int array_diff_int (int *, int, int *, int, int *);
 
@@ -52,6 +53,7 @@ mm_player_new (PmDeviceID device)
   player = calloc (1, sizeof (MMPlayer));
   assert (player != NULL);
   player->timer = mm_timer_new ();
+  player->bpm = 120.;
 
   err = Pm_OpenOutput (&player->stream, device, NULL, 32,
                        mm_player_time_proc, player, 1);
@@ -116,7 +118,9 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
   if (mm_chord_get_lift (chord))
     {
       send_notes_off (player, player->notes, player->nnotes);
-      send_notes_on (player, notes, nnotes);
+      send_notes_on (player, notes, nnotes,
+                     mm_chord_get_delay (chord),
+                     mm_chord_get_broken (chord));
     }
   else
     {
@@ -131,7 +135,9 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
       ndiff = array_diff_int (notes, nnotes,
                               player->notes, player->nnotes,
                               diff);
-      send_notes_on (player, diff, ndiff);
+      send_notes_on (player, diff, ndiff,
+                     mm_chord_get_delay (chord),
+                     mm_chord_get_broken (chord));
     }
 
   printf ("--------\n");
@@ -151,14 +157,42 @@ mm_player_killall (MMPlayer *player)
   return mm_player_send (player, 0xB0, 0x7B, 0x00, 0);
 }
 
-static void
-send_notes_on (MMPlayer *player, int *notes, int nnotes)
+void
+mm_player_set_bpm (MMPlayer *player, double bpm)
 {
-  printf ("     ON:");
-  for (int i = 0; i < nnotes; ++i)
+  if (player != NULL && bpm > 0.)
     {
-      mm_player_send (player, 0x90, notes[i], 0x7F, 0);
+      player->bpm = bpm;
+      printf ("    BPM: " MMCB ("%.2f") "\n--------\n", player->bpm);
+    }
+}
+
+static int
+beats_to_ms (MMPlayer *player, double beats)
+{
+  if (player->bpm <= 0. || beats <= 0.)
+    return 0;
+  return (int) ((60000. / player->bpm) * beats);
+}
+
+static void
+send_notes_on (MMPlayer *player, int *notes, int nnotes, double delay,
+               double broken)
+{
+  bool up = (broken >= 0) ? true : false;
+  int offset = beats_to_ms (player, delay);
+  int delta = beats_to_ms (player, (up ? broken : -broken));
+
+  printf ("     ON:");
+  for (int i = (up ? 0 : nnotes - 1);
+       (up && (i < nnotes)) || (!up && (i >= 0));
+       i += (up ? 1 : -1))
+    {
       printf (" " MMCG ("%d"), notes[i]);
+      if (offset > 0)
+        printf (" +%d", offset);
+      mm_player_send (player, 0x90, notes[i], 0x7F, offset);
+      offset += delta;
     }
   printf ("\n");
 }
