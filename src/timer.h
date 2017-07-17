@@ -26,6 +26,8 @@ MMTimer *mm_timer_new ();
 void mm_timer_free (MMTimer *);
 bool mm_timer_reset (MMTimer *);
 unsigned int mm_timer_get_age (const MMTimer *);
+void mm_timer_tap (MMTimer *);
+double mm_timer_get_bpm (const MMTimer *);
 
 void mm_sleep (unsigned int);
 

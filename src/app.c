@@ -28,6 +28,7 @@ struct _MMApp
   bool quit;
   MMInput *input;
   MMPlayer *player;
+  MMTimer *timer;
 };
 
 MMApp *
@@ -44,6 +45,7 @@ mm_app_new (MMInput *input, MMPlayer *player)
   app->quit = false;
   app->input = input;
   app->player = player;
+  app->timer = mm_timer_new ();
 
   return app;
 }
@@ -55,8 +57,19 @@ mm_app_free (MMApp *app)
     {
       mm_input_free (app->input);
       mm_player_free (app->player);
+      mm_timer_free (app->timer);
       free (app);
     }
+}
+
+static void
+mm_app_tap (MMApp *app)
+{
+  double bpm;
+  mm_timer_tap (app->timer);
+  bpm = mm_timer_get_bpm (app->timer);
+  if (bpm > 0.)
+    mm_player_set_bpm (app->player, bpm);
 }
 
 static inline void
@@ -77,6 +90,9 @@ mm_app_tick (MMApp *app, MMProgram *program)
           break;
         case MM_BTN_TR:
           mm_player_play (app->player, mm_sequence_next (seq));
+          break;
+        case MM_BTN_Y:
+          mm_app_tap (app);
           break;
         default:
           MMERR ("Unhandled input event " MMCY ("%s"), mm_btn_name (event));
