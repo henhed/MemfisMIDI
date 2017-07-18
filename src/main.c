@@ -90,9 +90,7 @@ main (int argc, char **argv)
       if (program == NULL)
           continue;
 
-      printf ("\n========\n"
-              " OPENED: " MMCG ("%s")
-              "\n========\n\n", argv[arg]);
+      mm_printf_title ("\n" MMCG ("%s") "\n", argv[arg]);
 
       mm_app_run (app, program);
       mm_program_free (program);
