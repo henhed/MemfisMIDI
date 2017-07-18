@@ -25,6 +25,8 @@
 
 static bool load_sequence (MMProgram *, yaml_document_t *);
 const char *get_sequence_name (yaml_document_t *, yaml_node_t *);
+static void load_sequence_properties (MMSequence *, yaml_document_t *,
+                                      yaml_node_t *);
 static void load_chords (MMSequence *, yaml_document_t *, yaml_node_t *);
 static void load_chord_properties (MMChord *, yaml_document_t *, yaml_node_t *);
 static bool node_to_string (yaml_node_t *, const char **);
@@ -99,6 +101,7 @@ load_sequence (MMProgram *program, yaml_document_t *doc)
     }
 
   sequence = mm_sequence_new (get_sequence_name (doc, root));
+  load_sequence_properties (sequence, doc, root);
   mm_program_add (program, sequence);
   load_chords (sequence, doc, root);
 
@@ -116,6 +119,28 @@ get_sequence_name (yaml_document_t *doc, yaml_node_t *root)
     }
 
   return (const char *) node->data.scalar.value;
+}
+
+static void
+load_sequence_properties (MMSequence *sequence, yaml_document_t *doc,
+                          yaml_node_t *node)
+{
+  int loop;
+  bool tap;
+  int prg;
+  double bpm;
+
+  if (node_to_int (get_node_by_key (doc, node, "loop"), &loop) && loop >= 0)
+    mm_sequence_set_loop (sequence, (unsigned int) loop);
+
+  if (node_to_bool (get_node_by_key (doc, node, "tap"), &tap) && tap == true)
+    mm_sequence_set_tap (sequence, tap);
+
+  if (node_to_int (get_node_by_key (doc, node, "program"), &prg) && prg >= 0)
+    mm_sequence_set_midiprg (sequence, prg);
+
+  if (node_to_float (get_node_by_key (doc, node, "bpm"), &bpm) && bpm > 0.)
+    mm_sequence_set_bpm (sequence, bpm);
 }
 
 static void
