@@ -30,6 +30,10 @@ struct _MMSequence
   MMChord *chords[MAX_NUM_CHORDS];
   int nchords;
   int current;
+  unsigned int loop;
+  bool tap;
+  int midiprg;
+  double bpm;
 };
 
 MMSequence *
@@ -42,6 +46,10 @@ mm_sequence_new (const char *name)
   sequence->name = strndup (name, 32);
   assert (sequence->name != NULL);
   sequence->current = -1;
+  sequence->loop = 0;
+  sequence->tap = false;
+  sequence->midiprg = -1;
+  sequence->bpm = -1.;
   return sequence;
 }
 
@@ -66,6 +74,58 @@ mm_sequence_get_name (const MMSequence *sequence)
   return sequence->name;
 }
 
+unsigned int
+mm_sequence_get_loop (const MMSequence *sequence)
+{
+  return (sequence != NULL) ? sequence->loop : 0;
+}
+
+void
+mm_sequence_set_loop (MMSequence *sequence, unsigned int loop)
+{
+  if (sequence != NULL)
+    sequence->loop = loop;
+}
+
+bool
+mm_sequence_get_tap (const MMSequence *sequence)
+{
+  return (sequence != NULL) ? sequence->tap : 0;
+}
+
+void
+mm_sequence_set_tap (MMSequence *sequence, bool tap)
+{
+  if (sequence != NULL)
+    sequence->tap = tap;
+}
+
+int
+mm_sequence_get_midiprg (const MMSequence *sequence)
+{
+  return (sequence != NULL) ? sequence->midiprg : -1;
+}
+
+void
+mm_sequence_set_midiprg (MMSequence *sequence, int midiprg)
+{
+  if (sequence != NULL)
+    sequence->midiprg = midiprg;
+}
+
+double
+mm_sequence_get_bpm (const MMSequence *sequence)
+{
+  return (sequence != NULL) ? sequence->bpm : -1.;
+}
+
+void
+mm_sequence_set_bpm (MMSequence *sequence, double bpm)
+{
+  if (sequence != NULL)
+    sequence->bpm = bpm;
+}
+
 MMChord *
 mm_sequence_add (MMSequence *sequence, MMChord *chord)
 {
@@ -86,8 +146,16 @@ mm_sequence_add (MMSequence *sequence, MMChord *chord)
 MMChord *
 mm_sequence_next (MMSequence *sequence)
 {
-  if (sequence == NULL || sequence->nchords == 0)
+  if (sequence == NULL || sequence->nchords <= 0)
     return NULL;
+
+  if (sequence->current >= sequence->nchords - 1)
+    {
+      if (sequence->loop == 0)
+        return NULL;
+      else
+        --sequence->loop;
+    }
 
   sequence->current = (sequence->current + 1) % sequence->nchords;
   return sequence->chords[sequence->current];

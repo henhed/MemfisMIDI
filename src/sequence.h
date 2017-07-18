@@ -18,6 +18,7 @@
 #ifndef MM_SEQUENCE_H
 #define MM_SEQUENCE_H 1
 
+#include <stdbool.h>
 #include "chord.h"
 
 typedef struct _MMSequence MMSequence;
@@ -25,6 +26,14 @@ typedef struct _MMSequence MMSequence;
 MMSequence *mm_sequence_new (const char *);
 void mm_sequence_free (MMSequence *);
 const char *mm_sequence_get_name (const MMSequence *);
+unsigned int mm_sequence_get_loop (const MMSequence *);
+void mm_sequence_set_loop (MMSequence *, unsigned int);
+bool mm_sequence_get_tap (const MMSequence *);
+void mm_sequence_set_tap (MMSequence *, bool);
+int mm_sequence_get_midiprg (const MMSequence *);
+void mm_sequence_set_midiprg (MMSequence *, int);
+double mm_sequence_get_bpm (const MMSequence *);
+void mm_sequence_set_bpm (MMSequence *, double);
 MMChord *mm_sequence_add (MMSequence *, MMChord *);
 MMChord *mm_sequence_next (MMSequence *);
 
