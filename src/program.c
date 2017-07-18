@@ -36,6 +36,7 @@ mm_program_new ()
 {
   MMProgram *program = calloc (1, sizeof (MMProgram));
   assert (program != NULL);
+  program->current = -1;
   return program;
 }
 
@@ -68,10 +69,20 @@ mm_program_add (MMProgram *program, MMSequence *sequence)
 }
 
 MMSequence *
-mm_program_current (MMProgram *program)
+mm_program_current (const MMProgram *program)
 {
   if (program == NULL || program->current < 0
       || program->current >= program->nsequences)
     return NULL;
   return program->sequences[program->current];
+}
+
+MMSequence *
+mm_program_next (MMProgram *program)
+{
+  if (program == NULL || program->current < -1
+      || program->current >= (program->nsequences - 1))
+    return NULL;
+
+  return program->sequences[++program->current];
 }

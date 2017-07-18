@@ -72,11 +72,51 @@ mm_app_tap (MMApp *app)
     mm_player_set_bpm (app->player, bpm);
 }
 
+static MMSequence *
+mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
+{
+  MMSequence *seq = mm_program_current (program);
+  if (seq == NULL || progress == true)
+    {
+      int midiprg;
+      char midiprgname[5] = "None";
+
+      seq = mm_program_next (program);
+      if (seq == NULL)
+        {
+          app->quit = true;
+          mm_player_killall (app->player);
+          return NULL;
+        }
+
+      midiprg = mm_sequence_get_midiprg (seq);
+      if (midiprg >= 0)
+        {
+          midiprg &= 0x7F;
+          mm_player_send (app->player, 0xC0, midiprg, 0, 0);
+          snprintf (midiprgname, 5, "0x%.2X", midiprg);
+        }
+
+      mm_printf_subtitle ("%20.20s: " MMCB ("%-20.20s") "\n"
+                          "%20.20s: " MMCY ("%-20.20s") "\n"
+                          "%20.20s: " MMCY ("x%-19u") "\n"
+                          "%20.20s: " MMCY ("%-20.20s"),
+                          "SEQUENCE", mm_sequence_get_name (seq),
+                          "PROGRAM", midiprgname,
+                          "LOOP", mm_sequence_get_loop (seq),
+                          "TAP", mm_sequence_get_tap (seq) ? "Yes" : "No");
+
+      mm_player_set_bpm (app->player, mm_sequence_get_bpm (seq));
+    }
+  return seq;
+}
+
 static inline void
 mm_app_tick (MMApp *app, MMProgram *program)
 {
   int event;
-  MMSequence *seq = mm_program_current (program);
+  MMChord *chord;
+  MMSequence *seq = mm_app_get_sequence (app, program, false);
 
   while ((event = mm_input_read (app->input)) >= 0)
     {
@@ -89,7 +129,15 @@ mm_app_tick (MMApp *app, MMProgram *program)
           mm_player_killall (app->player);
           break;
         case MM_BTN_TR:
-          mm_player_play (app->player, mm_sequence_next (seq));
+          chord = mm_sequence_next (seq);
+          if (chord != NULL)
+            {
+              if (mm_sequence_get_tap (seq))
+                mm_app_tap (app);
+              mm_player_play (app->player, chord);
+            }
+          else
+            seq = mm_app_get_sequence (app, program, true);
           break;
         case MM_BTN_Y:
           mm_app_tap (app);
