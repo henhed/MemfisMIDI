@@ -20,12 +20,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define MM_VLINE 7
+#define MM_VLINE 10
 
 #define MMCB(string) \
   "\e[1;34m" string "\e[21;39m"
@@ -244,6 +245,27 @@ mm_printf_subtitle (const char *format, ...)
                   " ",          "│",
                   "╭", "", "─", "╯");
   va_end (ap);
+}
+
+static inline void
+mm_print_cmd_end ()
+{
+  for (int i = 0; i < MM_VLINE; ++i)
+    printf ("─");
+  printf ("┤\n");
+}
+
+static inline void
+mm_print_cmd (const char *cmd, bool arg)
+{
+  printf (arg ? "%*.*s " : MMCY ("%*.*s "), MM_VLINE - 1, MM_VLINE - 1, cmd);
+  if (arg)
+    printf ("├ ");
+  else
+    {
+      printf ("│\n");
+      mm_print_cmd_end ();
+    }
 }
 
 #endif /* ! MM_PRINT_H */

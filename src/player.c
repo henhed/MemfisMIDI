@@ -111,7 +111,8 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
   if (player == NULL || chord == NULL)
     return;
 
-  printf ("PLAYING: " MMCB ("%s") "\n", mm_chord_get_name (chord));
+  mm_print_cmd ("PLAYING", true);
+  printf (MMCB ("%s") "\n", mm_chord_get_name (chord));
 
   nnotes = mm_chord_get_notes (chord, notes);
 
@@ -140,7 +141,7 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
                      mm_chord_get_broken (chord));
     }
 
-  printf ("--------\n");
+  mm_print_cmd_end ();
 
   memcpy (player->notes, notes, sizeof (int) * nnotes);
   player->nnotes = nnotes;
@@ -151,7 +152,7 @@ mm_player_killall (MMPlayer *player)
 {
   if (player == NULL)
     return false;
-  printf (MMCY ("KILL ALL") "\n--------\n");
+  mm_print_cmd ("KILL ALL", false);
   player->nnotes = 0;
   memset (player->notes, 0, sizeof (int) * 12);
   return mm_player_send (player, 0xB0, 0x7B, 0x00, 0);
@@ -163,7 +164,9 @@ mm_player_set_bpm (MMPlayer *player, double bpm)
   if (player != NULL && bpm > 0.)
     {
       player->bpm = bpm;
-      printf ("    BPM: " MMCB ("%.2f") "\n--------\n", player->bpm);
+      mm_print_cmd ("BPM", true);
+      printf (MMCB ("%.2f") "\n", player->bpm);
+      mm_print_cmd_end ();
     }
 }
 
@@ -183,14 +186,14 @@ send_notes_on (MMPlayer *player, int *notes, int nnotes, double delay,
   int offset = beats_to_ms (player, delay);
   int delta = beats_to_ms (player, (up ? broken : -broken));
 
-  printf ("     ON:");
+  mm_print_cmd ("ON", true);
   for (int i = (up ? 0 : nnotes - 1);
        (up && (i < nnotes)) || (!up && (i >= 0));
        i += (up ? 1 : -1))
     {
-      printf (" " MMCG ("%d"), notes[i]);
+      printf (MMCG ("%d") " ", notes[i]);
       if (offset > 0)
-        printf (" +%d", offset);
+        printf ("+%d ", offset);
       mm_player_send (player, 0x90, notes[i], 0x7F, offset);
       offset += delta;
     }
@@ -200,11 +203,11 @@ send_notes_on (MMPlayer *player, int *notes, int nnotes, double delay,
 static void
 send_notes_off (MMPlayer *player, int *notes, int nnotes)
 {
-  printf ("    OFF:");
+  mm_print_cmd ("OFF", true);
   for (int i = 0; i < nnotes; ++i)
     {
       mm_player_send (player, 0x80, notes[i], 0x40, 0);
-      printf (" " MMCY ("%d"), notes[i]);
+      printf (MMCY ("%d") " ", notes[i]);
     }
   printf ("\n");
 }
