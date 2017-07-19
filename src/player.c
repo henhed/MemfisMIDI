@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 
 #include "player.h"
 #include "timer.h"
@@ -30,6 +31,8 @@ struct _MMPlayer
   int notes[12];
   int nnotes;
   double bpm;
+  unsigned int last_sync;
+  double sync_frac;
 };
 
 static void send_notes_on (MMPlayer *, int *, int, double, double);
@@ -54,6 +57,8 @@ mm_player_new (PmDeviceID device)
   assert (player != NULL);
   player->timer = mm_timer_new ();
   player->bpm = 120.;
+  player->last_sync = 0;
+  player->sync_frac = 0.;
 
   err = Pm_OpenOutput (&player->stream, device, NULL, 32,
                        mm_player_time_proc, player, 1);
@@ -168,6 +173,35 @@ mm_player_set_bpm (MMPlayer *player, double bpm)
       printf (MMCB ("%.2f") "\n", player->bpm);
       mm_print_cmd_end ();
     }
+}
+
+void
+mm_player_sync_clock (MMPlayer *player)
+{
+  double toi; /* integral timeout part.  */
+  double tof; /* fractional timeout part.  */
+  unsigned int now;
+
+  if (player == NULL || player->bpm <= 0.)
+    return;
+
+  now = mm_timer_get_age (player->timer);
+  if (player->last_sync > now)
+    return;
+
+  tof = modf (2500. / player->bpm, &toi); /* 24 ppqn.  */
+  while (player->last_sync <= now)
+    {
+      player->last_sync += toi;
+      player->sync_frac += tof;
+      if (player->sync_frac > 1.)
+        {
+          player->last_sync += 1;
+          player->sync_frac -= 1.;
+        }
+    }
+
+  mm_player_send (player, 0xF8, 0x00, 0x00, player->last_sync - now);
 }
 
 static int

@@ -60,9 +60,7 @@ mm_timer_reset (MMTimer *timer)
 {
   if (timer == NULL)
     return false;
-  memset (timer->taps, 0, sizeof (unsigned int) * MM_TIMER_NUM_TAPS);
-  timer->curr_tap = MM_TIMER_NUM_TAPS - 1;
-  timer->last_tap_age = 0;
+  mm_timer_reset_tap (timer);
   return clock_gettime (MM_CLOCK_ID, &timer->ts) == 0 ? true : false;
 }
 
@@ -99,6 +97,16 @@ mm_timer_tap (MMTimer *timer)
     }
 
   timer->last_tap_age = age;
+}
+
+void
+mm_timer_reset_tap (MMTimer *timer)
+{
+  if (timer == NULL)
+    return;
+  memset (timer->taps, 0, sizeof (unsigned int) * MM_TIMER_NUM_TAPS);
+  timer->curr_tap = MM_TIMER_NUM_TAPS - 1;
+  timer->last_tap_age = 0;
 }
 
 static int

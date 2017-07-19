@@ -80,6 +80,7 @@ mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
     {
       int midiprg;
       char midiprgname[5] = "None";
+      double bpm;
 
       seq = mm_program_next (program);
       if (seq == NULL)
@@ -97,16 +98,21 @@ mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
           snprintf (midiprgname, 5, "0x%.2X", midiprg);
         }
 
-      mm_printf_subtitle ("%20.20s: " MMCB ("%-20.20s") "\n"
-                          "%20.20s: " MMCY ("%-20.20s") "\n"
-                          "%20.20s: " MMCY ("x%-19u") "\n"
-                          "%20.20s: " MMCY ("%-20.20s"),
+      mm_printf_subtitle ("%20.20s: " MMCB ("%-15.15s") "\n"
+                          "%20.20s: " MMCY ("%-15.15s") "\n"
+                          "%20.20s: " MMCY ("x%-14u") "\n"
+                          "%20.20s: " MMCY ("%-15.15s"),
                           "SEQUENCE", mm_sequence_get_name (seq),
                           "PROGRAM", midiprgname,
                           "LOOP", mm_sequence_get_loop (seq),
                           "TAP", mm_sequence_get_tap (seq) ? "Yes" : "No");
 
-      mm_player_set_bpm (app->player, mm_sequence_get_bpm (seq));
+      bpm = mm_sequence_get_bpm (seq);
+      if (bpm > 0.)
+        {
+          mm_player_set_bpm (app->player, bpm);
+          mm_timer_reset_tap (app->timer);
+        }
     }
   return seq;
 }
@@ -117,6 +123,8 @@ mm_app_tick (MMApp *app, MMProgram *program)
   int event;
   MMChord *chord;
   MMSequence *seq = mm_app_get_sequence (app, program, false);
+
+  mm_player_sync_clock (app->player);
 
   while ((event = mm_input_read (app->input)) >= 0)
     {

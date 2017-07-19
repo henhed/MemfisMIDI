@@ -1,6 +1,6 @@
 VPATH = src
 CFLAGS = -Wall -Werror -Wextra -std=c99 $$(pkg-config --cflags yaml-0.1) -D_DEFAULT_SOURCE
-LFLAGS = -lportmidi $$(pkg-config --libs yaml-0.1)
+LFLAGS = -lm -lportmidi $$(pkg-config --libs yaml-0.1)
 objects = app.o \
 	chord.o \
 	input.o \
