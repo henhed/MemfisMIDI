@@ -4,6 +4,7 @@ LFLAGS = -lm -lportmidi $$(pkg-config --libs yaml-0.1)
 objects = app.o \
 	chord.o \
 	input.o \
+	input_joystick.o \
 	main.o \
 	player.o \
 	program.o \

@@ -21,6 +21,7 @@
 
 #include "app.h"
 #include "input.h"
+#include "input_joystick.h"
 #include "player.h"
 #include "program.h"
 #include "program_factory.h"
@@ -45,6 +46,7 @@ main (int argc, char **argv)
 {
   MMApp *app;
   MMInput *input;
+  MMInputDevice idev;
   MMPlayer *player;
 
   PmError err;
@@ -56,9 +58,23 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  input = mm_input_new ();
-  if (!mm_input_connect (input, MM_INPUT_DEVICE))
-    MMERR ("Could not open " MMCY (MM_INPUT_DEVICE));
+  mm_input_register_backend (mm_input_joystick_backend);
+  if (mm_input_list_devices (&idev, 1) > 0)
+    {
+      input = mm_input_new (&idev);
+      if (input != NULL)
+        printf ("Using input device " MMCB ("%s") "\n", idev.name);
+      else
+        {
+          MMERR ("Failed to open " MMCY ("%s"), idev.name);
+          return EXIT_FAILURE;
+        }
+    }
+  else
+    {
+      MMERR ("No input device found");
+      return EXIT_FAILURE;
+    }
 
   err = Pm_Initialize ();
   if (err < pmNoError)

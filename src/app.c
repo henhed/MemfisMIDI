@@ -120,23 +120,23 @@ mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
 static inline void
 mm_app_tick (MMApp *app, MMProgram *program)
 {
-  int event;
+  MMInputEvent event;
   MMChord *chord;
   MMSequence *seq = mm_app_get_sequence (app, program, false);
 
   mm_player_sync_clock (app->player);
 
-  while ((event = mm_input_read (app->input)) >= 0)
+  while (mm_input_read (app->input, &event) > 0)
     {
-      switch (event)
+      switch (event.type)
         {
-        case MM_BTN_SELECT:
+        case MMIE_QUIT:
           app->quit = true;
           /* break intentionally omitted.  */
-        case MM_BTN_TL:
+        case MMIE_KILLALL:
           mm_player_killall (app->player);
           break;
-        case MM_BTN_TR:
+        case MMIE_NEXT_STEP:
           chord = mm_sequence_next (seq);
           if (chord != NULL)
             {
@@ -147,11 +147,11 @@ mm_app_tick (MMApp *app, MMProgram *program)
           else
             seq = mm_app_get_sequence (app, program, true);
           break;
-        case MM_BTN_Y:
+        case MMIE_TAP:
           mm_app_tap (app);
           break;
         default:
-          MMERR ("Unhandled input event " MMCY ("%s"), mm_btn_name (event));
+          MMERR ("Unhandled input event " MMCY ("%d"), event.type);
           break;
         }
     }
