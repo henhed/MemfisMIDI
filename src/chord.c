@@ -39,6 +39,7 @@ struct _MMChord
   int octave;
   int quality;
   int notes[12];
+  int doubles[12];
   bool lift;
   double delay;
   double broken;
@@ -124,7 +125,7 @@ cmp_int (const void *a, const void *b)
 }
 
 int
-mm_chord_get_notes (const MMChord *chord, int *notes)
+mm_chord_get_notes (const MMChord *chord, int *notes, int max_nnotes)
 {
   int root, nnotes = 0;
 
@@ -133,7 +134,7 @@ mm_chord_get_notes (const MMChord *chord, int *notes)
 
   root = (12 * chord->octave) + chord->root;
 
-  for (int i = 0; i < 12; ++i)
+  for (int i = 0; i < 12 && nnotes < max_nnotes; ++i)
     {
       int offset = chord->notes[i];
 
@@ -143,6 +144,11 @@ mm_chord_get_notes (const MMChord *chord, int *notes)
         offset -= 1;
 
       notes[nnotes++] = root + i + (offset * 12);
+      if (chord->doubles[i] != 0 && nnotes < max_nnotes)
+        {
+          notes[nnotes] = notes[nnotes - 1] + (chord->doubles[i] * 12);
+          ++nnotes;
+        }
     }
 
   if (nnotes > 1)
@@ -178,19 +184,24 @@ mm_chord_shift_octave (MMChord *chord, int octave)
 }
 
 void
-mm_chord_shift_note_octave (MMChord *chord, int note, int octave)
+mm_chord_shift_note_octave (MMChord *chord, int note, int octave, bool replace)
 {
   if (chord == NULL || note < 0 || note > 11 || octave == 0
       || chord->notes[note] == 0)
     return;
 
-  if (chord->notes[note] > 0)
-    chord->notes[note] -= 1;
+  if (replace)
+    {
+      if (chord->notes[note] > 0)
+        chord->notes[note] -= 1;
 
-  chord->notes[note] += octave;
+      chord->notes[note] += octave;
 
-  if (chord->notes[note] >= 0)
-    chord->notes[note] += 1;
+      if (chord->notes[note] >= 0)
+        chord->notes[note] += 1;
+    }
+  else
+    chord->doubles[note] = octave;
 }
 
 double

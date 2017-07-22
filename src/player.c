@@ -110,8 +110,8 @@ mm_player_send (MMPlayer *player, int status, int data1, int data2, int delay)
 void
 mm_player_play (MMPlayer *player, const MMChord *chord)
 {
-  int notes[12];
-  int nnotes;
+  int nnotes = 12;
+  int notes[nnotes];
 
   if (player == NULL || chord == NULL)
     return;
@@ -119,7 +119,7 @@ mm_player_play (MMPlayer *player, const MMChord *chord)
   mm_print_cmd ("PLAYING", true);
   printf (MMCB ("%s") "\n", mm_chord_get_name (chord));
 
-  nnotes = mm_chord_get_notes (chord, notes);
+  nnotes = mm_chord_get_notes (chord, notes, nnotes);
 
   if (mm_chord_get_lift (chord))
     {

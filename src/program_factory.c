@@ -188,13 +188,32 @@ load_chords (MMSequence *sequence, yaml_document_t *doc, yaml_node_t *root)
 }
 
 static void
+load_chord_voicing (MMChord *chord, yaml_document_t *doc, yaml_node_t *node,
+                    bool replace)
+{
+  if (node != NULL && node->type == YAML_MAPPING_NODE)
+    {
+      for (yaml_node_pair_t *pair = node->data.mapping.pairs.start;
+           pair < node->data.mapping.pairs.top;
+           ++pair)
+        {
+          int note;
+          int offset;
+          yaml_node_t *knode = yaml_document_get_node (doc, pair->key);
+          yaml_node_t *vnode = yaml_document_get_node (doc, pair->value);
+          if (node_to_int (knode, &note) && node_to_int (vnode, &offset))
+            mm_chord_shift_note_octave (chord, note, offset, replace);
+        }
+    }
+}
+
+static void
 load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
 {
   bool lift;
   int octave;
   double delay;
   double broken;
-  yaml_node_t *voice;
 
   if (node_to_bool (get_node_by_key (doc, node, "lift"), &lift) && lift == true)
     mm_chord_set_lift (chord, lift);
@@ -208,21 +227,8 @@ load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
   if (node_to_float (get_node_by_key (doc, node, "break"), &broken))
     mm_chord_set_broken (chord, broken);
 
-  voice = get_node_by_key (doc, node, "voice");
-  if (voice != NULL && voice->type == YAML_MAPPING_NODE)
-    {
-      for (yaml_node_pair_t *pair = voice->data.mapping.pairs.start;
-           pair < voice->data.mapping.pairs.top;
-           ++pair)
-        {
-          int note;
-          int offset;
-          yaml_node_t *knode = yaml_document_get_node (doc, pair->key);
-          yaml_node_t *vnode = yaml_document_get_node (doc, pair->value);
-          if (node_to_int (knode, &note) && node_to_int (vnode, &offset))
-            mm_chord_shift_note_octave (chord, note, offset);
-        }
-    }
+  load_chord_voicing (chord, doc, get_node_by_key (doc, node, "voice"), true);
+  load_chord_voicing (chord, doc, get_node_by_key (doc, node, "double"), false);
 }
 
 static bool
