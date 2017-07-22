@@ -20,6 +20,7 @@
 #include <signal.h>
 
 #include "input.h"
+#include "timer.h"
 #include "print.h"
 
 #define MAX_NUM_BACKENDS 8
@@ -108,6 +109,12 @@ mm_input_read (const MMInput *input, MMInputEvent *event)
   return -1;
 }
 
+const char *
+mm_input_get_name (const MMInput *input)
+{
+  return (input != NULL) ? input->device.name : NULL;
+}
+
 bool
 mm_input_register_backend (const MMInputBackend *backend)
 {
@@ -154,6 +161,61 @@ mm_input_list_devices (MMInputDevice *devices, size_t ndevices)
     found += _backends[i]->probe (&devices[found], ndevices - found);
 
   return found;
+}
+
+MMInput *
+mm_input_autodetect ()
+{
+  size_t ndevices = 10;
+  size_t ncandidates = 0;
+  MMInputDevice devices[ndevices];
+  MMInput *candidates[ndevices];
+  MMInputEvent e;
+  unsigned int i, j;
+
+  ndevices = mm_input_list_devices (devices, ndevices);
+
+  if (ndevices == 0)
+    return NULL;
+  else if (ndevices == 1)
+    return mm_input_new (&devices[0]);
+
+  for (i = 0; i < ndevices; ++i)
+    {
+      candidates[ncandidates] = mm_input_new (&devices[i]);
+      if (candidates[ncandidates] != NULL)
+        ++ncandidates;
+    }
+
+  if (ncandidates == 0)
+    return NULL;
+  else if (ncandidates == 1)
+    return candidates[0];
+
+  for (;;)
+    {
+      for (i = 0; i < ncandidates; ++i)
+        {
+          if (mm_input_read (candidates[i], &e) > 0)
+            {
+              if (e.type == MMIE_QUIT)
+                {
+                  for (j = 0; j < ncandidates; ++j)
+                    mm_input_free (candidates[j]);
+                  return NULL;
+                }
+              for (j = 0; j < ncandidates; ++j)
+                {
+                  if (j != i)
+                    mm_input_free (candidates[j]);
+                }
+              return candidates[i];
+            }
+        }
+      mm_sleep (10);
+    }
+
+  return NULL;
 }
 
 static void

@@ -22,12 +22,11 @@
 #include "app.h"
 #include "input.h"
 #include "input_joystick.h"
+#include "input_midi.h"
 #include "player.h"
 #include "program.h"
 #include "program_factory.h"
 #include "print.h"
-
-#define MM_INPUT_DEVICE "/dev/input/js0"
 
 static PmDeviceID
 mm_get_output_device_id ()
@@ -46,7 +45,6 @@ main (int argc, char **argv)
 {
   MMApp *app;
   MMInput *input;
-  MMInputDevice idev;
   MMPlayer *player;
 
   PmError err;
@@ -58,24 +56,6 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  mm_input_register_backend (mm_input_joystick_backend);
-  if (mm_input_list_devices (&idev, 1) > 0)
-    {
-      input = mm_input_new (&idev);
-      if (input != NULL)
-        printf ("Using input device " MMCB ("%s") "\n", idev.name);
-      else
-        {
-          MMERR ("Failed to open " MMCY ("%s"), idev.name);
-          return EXIT_FAILURE;
-        }
-    }
-  else
-    {
-      MMERR ("No input device found");
-      return EXIT_FAILURE;
-    }
-
   err = Pm_Initialize ();
   if (err < pmNoError)
     {
@@ -83,10 +63,25 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
+  mm_clear_screen ();
+  mm_printf_subtitle ("Detecting input..");
+  mm_input_register_backend (mm_input_joystick_backend);
+  mm_input_register_backend (mm_input_midi_backend);
+  input = mm_input_autodetect ();
+  if (input == NULL)
+    {
+      MMERR ("No input device found");
+      Pm_Terminate ();
+      return EXIT_FAILURE;
+    }
+  mm_clear_screen ();
+  mm_printf_subtitle ("Using " MMCB ("%s"), mm_input_get_name (input));
+
   device = mm_get_output_device_id ();
   if (device == pmNoDevice)
     {
       MMERR ("No output device found");
+      mm_input_free (input);
       Pm_Terminate ();
       return EXIT_FAILURE;
     }
@@ -94,6 +89,7 @@ main (int argc, char **argv)
   player = mm_player_new (device);
   if (player == NULL)
     {
+      mm_input_free (input);
       Pm_Terminate ();
       return EXIT_FAILURE;
     }
@@ -110,6 +106,7 @@ main (int argc, char **argv)
 
       mm_app_run (app, program);
       mm_program_free (program);
+      mm_clear_screen ();
     }
 
   mm_app_free (app);

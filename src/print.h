@@ -268,4 +268,10 @@ mm_print_cmd (const char *cmd, bool arg)
     }
 }
 
+static inline void
+mm_clear_screen ()
+{
+  printf ("\e[2J\e[H");
+}
+
 #endif /* ! MM_PRINT_H */

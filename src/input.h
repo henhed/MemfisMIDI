@@ -55,7 +55,9 @@ typedef struct
 MMInput *mm_input_new (const MMInputDevice *);
 void mm_input_free (MMInput *);
 int mm_input_read (const MMInput *, MMInputEvent *);
+const char *mm_input_get_name (const MMInput *);
 bool mm_input_register_backend (const MMInputBackend *);
 size_t mm_input_list_devices (MMInputDevice *, size_t);
+MMInput *mm_input_autodetect ();
 
 #endif /* ! MM_INPUT_H */
