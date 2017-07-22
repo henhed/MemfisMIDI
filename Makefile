@@ -5,6 +5,7 @@ objects = app.o \
 	chord.o \
 	input.o \
 	input_joystick.o \
+	input_midi.o \
 	main.o \
 	player.o \
 	program.o \
