@@ -34,5 +34,7 @@ double mm_chord_get_delay (const MMChord *);
 void mm_chord_set_delay (MMChord *, double);
 double mm_chord_get_broken (const MMChord *);
 void mm_chord_set_broken (MMChord *, double);
+double mm_chord_get_duration (const MMChord *);
+void mm_chord_set_duration (MMChord *, double);
 
 #endif /* ! MM_CHORD_H */

@@ -214,6 +214,7 @@ load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
   int octave;
   double delay;
   double broken;
+  double duration;
 
   if (node_to_bool (get_node_by_key (doc, node, "lift"), &lift) && lift == true)
     mm_chord_set_lift (chord, lift);
@@ -226,6 +227,9 @@ load_chord_properties (MMChord *chord, yaml_document_t *doc, yaml_node_t *node)
 
   if (node_to_float (get_node_by_key (doc, node, "break"), &broken))
     mm_chord_set_broken (chord, broken);
+
+  if (node_to_float (get_node_by_key (doc, node, "duration"), &duration))
+    mm_chord_set_duration (chord, duration);
 
   load_chord_voicing (chord, doc, get_node_by_key (doc, node, "voice"), true);
   load_chord_voicing (chord, doc, get_node_by_key (doc, node, "double"), false);

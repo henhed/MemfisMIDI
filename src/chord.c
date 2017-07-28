@@ -43,6 +43,7 @@ struct _MMChord
   bool lift;
   double delay;
   double broken;
+  double duration;
 };
 
 static int dom_scale[7] = {0, 2, 4, 5, 7, 9, 10};
@@ -228,6 +229,19 @@ mm_chord_set_broken (MMChord *chord, double broken)
 {
   if (chord != NULL)
     chord->broken = broken;
+}
+
+double
+mm_chord_get_duration (const MMChord *chord)
+{
+  return (chord != NULL) ? chord->duration : 0.;
+}
+
+void
+mm_chord_set_duration (MMChord *chord, double duration)
+{
+  if (chord != NULL && duration >= 0.)
+    chord->duration = duration;
 }
 
 static int

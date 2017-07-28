@@ -19,12 +19,19 @@
 #define MM_PLAYER_H 1
 
 #include <stdbool.h>
+#include <math.h>
 
 #include <portmidi.h>
 
 #include "chord.h"
 
 typedef struct _MMPlayer MMPlayer;
+
+typedef struct
+{
+  int i;
+  double f;
+} MMBeat;
 
 MMPlayer *mm_player_new (PmDeviceID);
 void mm_player_free (MMPlayer *);
@@ -33,5 +40,16 @@ void mm_player_play (MMPlayer *, const MMChord *);
 bool mm_player_killall (MMPlayer *);
 void mm_player_set_bpm (MMPlayer *, double);
 void mm_player_sync_clock (MMPlayer *);
+bool mm_player_get_beat (const MMPlayer *, MMBeat *);
+int mm_player_get_time_to_beat (const MMPlayer *, MMBeat *);
+
+static inline void
+mm_beat_addf (MMBeat *beat, double addition)
+{
+  double i;
+  beat->f += modf (addition, &i);
+  beat->i += (int) i;
+  for (; beat->f >= 1.; beat->i += 1, beat->f -= 1.);
+}
 
 #endif /* ! MM_PLAYER_H */

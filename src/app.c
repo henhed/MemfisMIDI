@@ -23,12 +23,16 @@
 #include "timer.h"
 #include "print.h"
 
+#define MM_TICKTIME 8
+
 struct _MMApp
 {
   bool quit;
   MMInput *input;
   MMPlayer *player;
   MMTimer *timer;
+  MMBeat beat;
+  MMBeat *trigger;
 };
 
 MMApp *
@@ -46,6 +50,7 @@ mm_app_new (MMInput *input, MMPlayer *player)
   app->input = input;
   app->player = player;
   app->timer = mm_timer_new ();
+  app->trigger = NULL;
 
   return app;
 }
@@ -117,6 +122,25 @@ mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
   return seq;
 }
 
+static int
+mm_app_get_next_event (MMApp *app, MMInputEvent *event)
+{
+  if (app->trigger != NULL)
+    {
+      int timeout = mm_player_get_time_to_beat (app->player, app->trigger);
+      if (timeout < MM_TICKTIME)
+        {
+          if (timeout > 0)
+            mm_sleep (timeout);
+          event->type = MMIE_NEXT_STEP;
+          app->trigger = NULL;
+          return 1;
+        }
+    }
+
+  return mm_input_read (app->input, event);
+}
+
 static inline void
 mm_app_tick (MMApp *app, MMProgram *program)
 {
@@ -126,7 +150,7 @@ mm_app_tick (MMApp *app, MMProgram *program)
 
   mm_player_sync_clock (app->player);
 
-  while (mm_input_read (app->input, &event) > 0)
+  while (mm_app_get_next_event (app, &event) > 0)
     {
       switch (event.type)
         {
@@ -140,6 +164,16 @@ mm_app_tick (MMApp *app, MMProgram *program)
           chord = mm_sequence_next (seq);
           if (chord != NULL)
             {
+              double duration = mm_chord_get_duration (chord);
+              if (duration > 0.)
+                {
+                  app->trigger = &app->beat;
+                  mm_player_get_beat (app->player, app->trigger);
+                  mm_beat_addf (app->trigger, duration);
+                }
+              else
+                app->trigger = NULL;
+
               if (mm_sequence_get_tap (seq))
                 mm_app_tap (app);
               mm_player_play (app->player, chord);
@@ -177,8 +211,8 @@ mm_app_run (MMApp *app, MMProgram *program)
       mm_app_tick (app, program);
 
       ticktime = mm_timer_get_age (timer);
-      if (ticktime < 10)
-        mm_sleep (10 - ticktime);
+      if (ticktime < MM_TICKTIME)
+        mm_sleep (MM_TICKTIME - ticktime);
     }
 
   mm_timer_free (timer);

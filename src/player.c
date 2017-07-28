@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include <math.h>
 
 #include "player.h"
 #include "timer.h"
@@ -33,8 +32,11 @@ struct _MMPlayer
   double bpm;
   unsigned int last_sync;
   double sync_frac;
+  unsigned int pulse_count;
 };
 
+static int beats_to_ms (const MMPlayer *, double);
+static double ms_to_beats (const MMPlayer *, int);
 static void send_notes_on (MMPlayer *, int *, int, double, double);
 static void send_notes_off (MMPlayer *, int *, int);
 static int array_diff_int (int *, int, int *, int, int *);
@@ -59,6 +61,7 @@ mm_player_new (PmDeviceID device)
   player->bpm = 120.;
   player->last_sync = 0;
   player->sync_frac = 0.;
+  player->pulse_count = 0;
 
   err = Pm_OpenOutput (&player->stream, device, NULL, 32,
                        mm_player_time_proc, player, 1);
@@ -194,7 +197,7 @@ mm_player_sync_clock (MMPlayer *player)
     {
       player->last_sync += toi;
       player->sync_frac += tof;
-      if (player->sync_frac > 1.)
+      if (player->sync_frac >= 1.)
         {
           player->last_sync += 1;
           player->sync_frac -= 1.;
@@ -202,14 +205,55 @@ mm_player_sync_clock (MMPlayer *player)
     }
 
   mm_player_send (player, 0xF8, 0x00, 0x00, player->last_sync - now);
+  ++player->pulse_count;
+}
+
+bool
+mm_player_get_beat (const MMPlayer *player, MMBeat *beat)
+{
+  int sync_dist;
+
+  if (player == NULL || beat == NULL || player->bpm <= 0.)
+    return false;
+
+  sync_dist = (int) mm_timer_get_age (player->timer) - player->last_sync;
+  beat->i = player->pulse_count / 24;
+  beat->f = (double) (player->pulse_count % 24) / 24.;
+  beat->f += ms_to_beats (player, sync_dist);
+  beat->f -= ms_to_beats (player, 1) * player->sync_frac;
+  for (; beat->f < 0.; beat->i -= 1, beat->f += 1.);
+
+  return true;
+}
+
+int
+mm_player_get_time_to_beat (const MMPlayer *player, MMBeat *beat)
+{
+  double diff;
+  MMBeat now;
+
+  if (beat == NULL || mm_player_get_beat (player, &now) == false)
+    return 0;
+
+  diff = (double) (beat->i - now.i) + (beat->f - now.f);
+
+  return beats_to_ms (player, diff);
 }
 
 static int
-beats_to_ms (MMPlayer *player, double beats)
+beats_to_ms (const MMPlayer *player, double beats)
 {
-  if (player->bpm <= 0. || beats <= 0.)
+  if (player->bpm <= 0. || beats == 0.)
     return 0;
   return (int) ((60000. / player->bpm) * beats);
+}
+
+static double
+ms_to_beats (const MMPlayer *player, int ms)
+{
+  if (player->bpm <= 0. || ms == 0)
+    return 0.;
+  return (double) ms / (60000. / player->bpm);
 }
 
 static void
@@ -217,7 +261,7 @@ send_notes_on (MMPlayer *player, int *notes, int nnotes, double delay,
                double broken)
 {
   bool up = (broken >= 0) ? true : false;
-  int offset = beats_to_ms (player, delay);
+  int offset = beats_to_ms (player, fmax (delay, 0.));
   int delta = beats_to_ms (player, (up ? broken : -broken));
 
   mm_print_cmd ("ON", true);
