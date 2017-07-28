@@ -103,10 +103,10 @@ mm_app_get_sequence (MMApp *app, MMProgram *program, bool progress)
           snprintf (midiprgname, 5, "0x%.2X", midiprg);
         }
 
-      mm_printf_subtitle ("%20.20s: " MMCB ("%-15.15s") "\n"
-                          "%20.20s: " MMCY ("%-15.15s") "\n"
-                          "%20.20s: " MMCY ("x%-14u") "\n"
-                          "%20.20s: " MMCY ("%-15.15s"),
+      mm_printf_subtitle ("%15.15s: " MMCB ("%-15.15s") "\n"
+                          "%15.15s: " MMCY ("%-15.15s") "\n"
+                          "%15.15s: " MMCY ("x%-14u") "\n"
+                          "%15.15s: " MMCY ("%-15.15s"),
                           "SEQUENCE", mm_sequence_get_name (seq),
                           "PROGRAM", midiprgname,
                           "LOOP", mm_sequence_get_loop (seq),

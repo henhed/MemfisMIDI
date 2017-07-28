@@ -29,13 +29,18 @@
 #include "print.h"
 
 static PmDeviceID
-mm_get_output_device_id ()
+mm_get_output_device_id (const char *input_name)
 {
   for (PmDeviceID id = Pm_CountDevices () - 1; id >= 0; --id)
     {
       const PmDeviceInfo *dev = Pm_GetDeviceInfo (id);
-      if (dev->output == 1)
-        return id;
+      if ((dev->output == 1) && (strcmp (dev->name, input_name) != 0))
+        {
+          mm_printf_subtitle ("INPUT / OUTPUT\n"
+                              MMCB ("%.32s") "\n" MMCB ("%.32s"),
+                              input_name, dev->name);
+          return id;
+        }
     }
   return pmNoDevice;
 }
@@ -75,9 +80,8 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
   mm_clear_screen ();
-  mm_printf_subtitle ("Using " MMCB ("%s"), mm_input_get_name (input));
 
-  device = mm_get_output_device_id ();
+  device = mm_get_output_device_id (mm_input_get_name (input));
   if (device == pmNoDevice)
     {
       MMERR ("No output device found");
