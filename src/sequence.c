@@ -160,3 +160,16 @@ mm_sequence_next (MMSequence *sequence)
   sequence->current = (sequence->current + 1) % sequence->nchords;
   return sequence->chords[sequence->current];
 }
+
+void
+mm_sequence_reset (MMSequence *sequence)
+{
+  if (sequence != NULL)
+    sequence->current = -1;
+}
+
+bool
+mm_sequence_is_reset (const MMSequence *sequence)
+{
+  return (sequence != NULL && sequence->current == -1) ? true : false;
+}

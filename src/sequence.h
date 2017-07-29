@@ -36,5 +36,7 @@ double mm_sequence_get_bpm (const MMSequence *);
 void mm_sequence_set_bpm (MMSequence *, double);
 MMChord *mm_sequence_add (MMSequence *, MMChord *);
 MMChord *mm_sequence_next (MMSequence *);
+void mm_sequence_reset (MMSequence *);
+bool mm_sequence_is_reset (const MMSequence *);
 
 #endif /* ! MM_SEQUENCE_H */

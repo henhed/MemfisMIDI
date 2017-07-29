@@ -27,5 +27,6 @@ void mm_program_free (MMProgram *);
 MMSequence *mm_program_add (MMProgram *, MMSequence *);
 MMSequence *mm_program_current (const MMProgram *);
 MMSequence *mm_program_next (MMProgram *);
+MMSequence *mm_program_previous (MMProgram *);
 
 #endif /* ! MM_PROGRAM_H */

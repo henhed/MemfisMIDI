@@ -24,10 +24,13 @@ typedef struct _MMInput MMInput;
 
 typedef enum
 {
-  MMIE_QUIT,
+  MMIE_QUIT = 0,
   MMIE_KILLALL,
   MMIE_NEXT_STEP,
-  MMIE_TAP
+  MMIE_PREV_SEQ,
+  MMIE_NEXT_SEQ,
+  MMIE_TAP,
+  MMIE_NUM_TYPES
 } MMInputEventType;
 
 typedef struct

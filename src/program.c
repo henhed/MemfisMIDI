@@ -86,3 +86,12 @@ mm_program_next (MMProgram *program)
 
   return program->sequences[++program->current];
 }
+
+MMSequence *
+mm_program_previous (MMProgram *program)
+{
+  if (program != NULL && program->current > 0)
+    --program->current;
+
+  return mm_program_current (program);
+}
