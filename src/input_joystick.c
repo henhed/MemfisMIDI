@@ -171,6 +171,12 @@ mm_input_joystick_read (void *connection, MMInputEvent *event)
             case MMJS_BTN_Y:
               event->type = MMIE_TAP;
               break;
+            case MMJS_BTN_X:
+              event->type = MMIE_PREV_SEQ;
+              break;
+            case MMJS_BTN_A:
+              event->type = MMIE_NEXT_SEQ;
+              break;
             default:
               MMERR ("Unhandled input event " MMCY ("%s"),
                      mm_js_btn_name (input->map[e.number]));
